@@ -1,0 +1,118 @@
+# Event Ticketing - the whole system starts with:  docker compose up --build
+#
+# Every setting comes from an environment variable. Values can be overridden
+# in a .env file (copy .env.example); the ${VAR:-default} fallbacks only exist
+# so the project runs out of the box.
+#
+#   Postman --REST--> api-gateway --gRPC--> ticket-service --gRPC--> event-service
+#                          \-----------------gRPC-------------------^
+#   ticket-service -> ticket-db        event-service -> event-db   (database per service)
+
+name: event-ticketing
+
+services:
+  # ---------- Event bounded context (Service B) ----------
+  event-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${EVENT_DB_NAME:-events}
+      POSTGRES_USER: ${EVENT_DB_USER:-event_svc}
+      POSTGRES_PASSWORD: ${EVENT_DB_PASSWORD:-event_secret}
+    volumes:
+      - event-db-data:/var/lib/postgresql/data
+    networks: [event-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  event-service:
+    build:
+      context: .
+      dockerfile: event-service/Dockerfile
+    environment:
+      GRPC_PORT: ${EVENT_GRPC_PORT:-50051}
+      DB_HOST: event-db
+      DB_PORT: "5432"
+      DB_NAME: ${EVENT_DB_NAME:-events}
+      DB_USER: ${EVENT_DB_USER:-event_svc}
+      DB_PASSWORD: ${EVENT_DB_PASSWORD:-event_secret}
+    depends_on:
+      event-db:
+        condition: service_healthy
+    networks: [event-net, backend]
+    restart: unless-stopped
+
+  # ---------- Ticket bounded context (Service A) ----------
+  ticket-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${TICKET_DB_NAME:-tickets}
+      POSTGRES_USER: ${TICKET_DB_USER:-ticket_svc}
+      POSTGRES_PASSWORD: ${TICKET_DB_PASSWORD:-ticket_secret}
+    volumes:
+      - ticket-db-data:/var/lib/postgresql/data
+    networks: [ticket-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  ticket-service:
+    build:
+      context: .
+      dockerfile: ticket-service/Dockerfile
+    environment:
+      GRPC_PORT: ${TICKET_GRPC_PORT:-50052}
+      DB_HOST: ticket-db
+      DB_PORT: "5432"
+      DB_NAME: ${TICKET_DB_NAME:-tickets}
+      DB_USER: ${TICKET_DB_USER:-ticket_svc}
+      DB_PASSWORD: ${TICKET_DB_PASSWORD:-ticket_secret}
+      # The ticket service knows the event service only by its compose name.
+      EVENT_SERVICE_ADDR: event-service:${EVENT_GRPC_PORT:-50051}
+      # Resilience settings for calls to the event service
+      EVENT_CALL_TIMEOUT: ${EVENT_CALL_TIMEOUT:-1s}
+      EVENT_CALL_MAX_ATTEMPTS: ${EVENT_CALL_MAX_ATTEMPTS:-3}
+      EVENT_CALL_BACKOFF: ${EVENT_CALL_BACKOFF:-200ms}
+      CB_FAILURE_THRESHOLD: ${CB_FAILURE_THRESHOLD:-3}
+      CB_OPEN_TIMEOUT: ${CB_OPEN_TIMEOUT:-15s}
+    depends_on:
+      ticket-db:
+        condition: service_healthy
+      event-service:
+        condition: service_started
+    networks: [ticket-net, backend]
+    restart: unless-stopped
+
+  # ---------- Single public entry point ----------
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    environment:
+      HTTP_PORT: ${GATEWAY_PORT:-8080}
+      EVENT_SERVICE_ADDR: event-service:${EVENT_GRPC_PORT:-50051}
+      TICKET_SERVICE_ADDR: ticket-service:${TICKET_GRPC_PORT:-50052}
+      REQUEST_TIMEOUT: ${GATEWAY_REQUEST_TIMEOUT:-10s}
+      GRPC_CONNECT_TIMEOUT: ${GATEWAY_GRPC_CONNECT_TIMEOUT:-2s}
+    ports:
+      - "${GATEWAY_PORT:-8080}:${GATEWAY_PORT:-8080}"   # the ONLY port published to the host
+    depends_on:
+      - event-service
+      - ticket-service
+    networks: [backend]
+    restart: unless-stopped
+
+# Each database sits on its own private network, reachable only by the
+# service that owns it - the other service physically cannot connect to it.
+networks:
+  event-net:
+  ticket-net:
+  backend:
+
+volumes:
+  event-db-data:
+  ticket-db-data:

@@ -1,0 +1,6 @@
+.env
+.remember/
+*.exe
+/bin/
+.idea/
+.vscode/
