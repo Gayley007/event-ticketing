@@ -1,0 +1,22 @@
+          List of relations
+ Schema |  Name  | Type  |   Owner   
+--------+--------+-------+-----------
+ public | events | table | event_svc
+(1 row)
+
+                  id                  |         name          | capacity | price 
+--------------------------------------+-----------------------+----------+-------
+ 4880d3b3-b06d-43ef-a5b4-6f2a1f17054a | Tshechu Night Concert |        5 |   650
+(1 row)
+
+           List of relations
+ Schema |  Name   | Type  |   Owner    
+--------+---------+-------+------------
+ public | tickets | table | ticket_svc
+(1 row)
+
+                  id                  |               event_id               | quantity |  status   
+--------------------------------------+--------------------------------------+----------+-----------
+ 8b1b625a-1108-4e00-bd22-6bd24cf69cae | 4880d3b3-b06d-43ef-a5b4-6f2a1f17054a |        3 | CANCELLED
+(1 row)
+

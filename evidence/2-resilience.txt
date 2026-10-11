@@ -1,0 +1,38 @@
+newman
+
+Event Ticketing - WEB303 Assignment
+
+□ 4. Resilience (run `docker compose stop event-service` first)
+└ Create ticket while Event Service is down -> 503
+  POST http://localhost:8088/tickets [503 Service Unavailable, 328B, 1895ms]
+  √  status is 503
+  √  error code is UNAVAILABLE
+
+└ Get ticket while Event Service is down -> 200 fallback
+  GET http://localhost:8088/tickets/8b1b625a-1108-4e00-bd22-6bd24cf69cae [200 OK, 607B, 741ms]
+  √  status is 200
+  √  fallback: event is null with a warning
+
+└ Cancel ticket while Event Service is down -> 200
+  PUT http://localhost:8088/tickets/8b1b625a-1108-4e00-bd22-6bd24cf69cae [200 OK, 411B, 8ms]
+  √  status is 200
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                  3 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                  3 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                  0 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                  5 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 2.7s                                          │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 1kB (approx)                                 │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 881ms [min: 8ms, max: 1895ms, s.d.: 776ms] │
+└───────────────────────────────────────────────────────────────────┘

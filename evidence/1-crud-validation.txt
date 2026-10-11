@@ -1,0 +1,121 @@
+newman
+
+Event Ticketing - WEB303 Assignment
+
+□ 1. Events (Service B) - CRUD
+└ Create event
+  POST http://localhost:8088/events [201 Created, 430B, 420ms]
+  √  status is 201
+  √  has generated id
+
+└ List events
+  GET http://localhost:8088/events [200 OK, 382B, 16ms]
+  √  status is 200
+  √  returns an events array
+
+└ Get event by id
+  GET http://localhost:8088/events/4880d3b3-b06d-43ef-a5b4-6f2a1f17054a [200 OK, 369B, 7ms]
+  √  status is 200
+  √  correct event
+
+└ Update event
+  PUT http://localhost:8088/events/4880d3b3-b06d-43ef-a5b4-6f2a1f17054a [200 OK, 373B, 6ms]
+  √  status is 200
+  √  price updated
+
+□ 2. Tickets (Service A) - CRUD
+└ Create ticket
+  POST http://localhost:8088/tickets [201 Created, 634B, 350ms]
+  √  status is 201
+  √  status is CONFIRMED
+  √  event confirmed via gRPC call to Event Service
+
+└ List tickets
+  GET http://localhost:8088/tickets [200 OK, 425B, 5ms]
+  √  status is 200
+
+└ List tickets for one event
+  GET http://localhost:8088/tickets?event_id=4880d3b3-b06d-43ef-a5b4-6f2a1f17054a [200 OK, 425B, 3ms]
+  √  status is 200
+  √  all tickets belong to the event
+
+└ Get ticket (enriched with event details)
+  GET http://localhost:8088/tickets/8b1b625a-1108-4e00-bd22-6bd24cf69cae [200 OK, 572B, 4ms]
+  √  status is 200
+  √  event details fetched from Event Service
+
+└ Update ticket
+  PUT http://localhost:8088/tickets/8b1b625a-1108-4e00-bd22-6bd24cf69cae [200 OK, 579B, 8ms]
+  √  status is 200
+  √  quantity updated
+
+□ 3. Validation & error mapping
+└ Create event - invalid fields -> 400
+  POST http://localhost:8088/events [400 Bad Request, 286B, 4ms]
+  √  status is 400
+  √  error code is INVALID_ARGUMENT
+
+└ Create event - malformed JSON -> 400
+  POST http://localhost:8088/events [400 Bad Request, 195B, 2ms]
+  √  status is 400
+
+└ Create event - wrong type -> 400
+  POST http://localhost:8088/events [400 Bad Request, 196B, 4ms]
+  √  status is 400
+
+└ Create event - bad timestamp -> 400
+  POST http://localhost:8088/events [400 Bad Request, 228B, 3ms]
+  √  status is 400
+
+└ Get event - invalid UUID -> 400
+  GET http://localhost:8088/events/not-a-uuid [400 Bad Request, 198B, 4ms]
+  √  status is 400
+  √  error code is INVALID_ARGUMENT
+
+└ Get event - not found -> 404
+  GET http://localhost:8088/events/00000000-0000-0000-0000-000000000000 [404 Not Found, 199B, 6ms]
+  √  status is 404
+  √  error code is NOT_FOUND
+
+└ Create ticket - invalid fields -> 400
+  POST http://localhost:8088/tickets [400 Bad Request, 278B, 5ms]
+  √  status is 400
+  √  error code is INVALID_ARGUMENT
+
+└ Create ticket - event does not exist -> 404
+  POST http://localhost:8088/tickets [404 Not Found, 204B, 6ms]
+  √  status is 404
+  √  error code is NOT_FOUND
+
+└ Create ticket - exceeds capacity -> 409
+  POST http://localhost:8088/tickets [409 Conflict, 217B, 4ms]
+  √  status is 409
+  √  error code is FAILED_PRECONDITION
+
+└ Update ticket - invalid status -> 400
+  PUT http://localhost:8088/tickets/8b1b625a-1108-4e00-bd22-6bd24cf69cae [400 Bad Request, 212B, 2ms]
+  √  status is 400
+
+└ Get ticket - not found -> 404
+  GET http://localhost:8088/tickets/00000000-0000-0000-0000-000000000000 [404 Not Found, 200B, 3ms]
+  √  status is 404
+
+┌─────────────────────────┬───────────────────┬───────────────────┐
+│                         │          executed │            failed │
+├─────────────────────────┼───────────────────┼───────────────────┤
+│              iterations │                 1 │                 0 │
+├─────────────────────────┼───────────────────┼───────────────────┤
+│                requests │                20 │                 0 │
+├─────────────────────────┼───────────────────┼───────────────────┤
+│            test-scripts │                20 │                 0 │
+├─────────────────────────┼───────────────────┼───────────────────┤
+│      prerequest-scripts │                 1 │                 0 │
+├─────────────────────────┼───────────────────┼───────────────────┤
+│              assertions │                35 │                 0 │
+├─────────────────────────┴───────────────────┴───────────────────┤
+│ total run duration: 1172ms                                      │
+├─────────────────────────────────────────────────────────────────┤
+│ total data received: 4.22kB (approx)                            │
+├─────────────────────────────────────────────────────────────────┤
+│ average response time: 43ms [min: 2ms, max: 420ms, s.d.: 114ms] │
+└─────────────────────────────────────────────────────────────────┘

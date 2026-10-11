@@ -1,5 +1,6 @@
 {
   "info": {
+    "_postman_id": "d40c31fd-14a2-46fc-bda3-eb96f0b4d048",
     "name": "Event Ticketing - WEB303 Assignment",
     "description": "REST calls to the API Gateway, which forwards them over gRPC to the Event Service (Service B) and Ticket Service (Service A).\n\nRun folders 1, 2, 3 and 5 in order with the Collection Runner. Folder 4 needs the Event Service to be stopped first.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
