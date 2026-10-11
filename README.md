@@ -19,15 +19,7 @@ the Event Service over gRPC to:
 * add the event's name, venue, date and price when **retrieving** a ticket
 
 ## Architecture
-
-```mermaid
-flowchart LR
-    PM["Postman"] -- "REST" --> GW["API Gateway"]
-    GW -- "gRPC" --> TS["Ticket Service<br/>(Service A)"]
-    GW -- "gRPC" --> ES["Event Service<br/>(Service B)"]
-    TS == "gRPC + timeout,<br/>retry, circuit breaker" ==> ES
-    TS --> TDB[("ticket-db")]
-    ES --> EDB[("event-db")]
+![alt text](<ArchitectureDiagram.drawio.png>)
 ```
 
 * Postman calls **only** the gateway. It is the only container with a port open to the host.
